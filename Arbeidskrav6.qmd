@@ -25,18 +25,21 @@ library(lme4)
 
 library(ggplot2)
 
-data("dxadata"); data("strengthvolume")
+library(knitr)
+
+data("dxadata") 
+data("strengthvolume")
 
 
 ```
 
 # Innledning
 
-I lang tid har man vært enige om at styrketrening er den mest optimale måten og øke muskelmasse og styrke. Men hva som er den mest optimale metoden og som gir best resultat er edna kraftig diskutert. I Krieger sin artikkel fant han ikke enn mer singinfikant endring jo høyere antall sets. (@Krieger2010) Så ser man på studiet til Santana så mener de at jo større mengde desto større effekt. (@Santana2021)
+I lang tid har man vært enige om at styrketrening er den mest optimale måten og øke muskelmasse og styrke. Men hva som er den mest optimale metoden og som gir best resultat er edna kraftig diskutert. I Krieger sin artikkel fant han ikke enn mer singinfikant endring jo høyere antall sets. [@Krieger2010] Så ser man på studiet til Santana så mener de at jo større mengde desto større effekt. [@Santana2021]
 
-Så i denne artikelen her skal vi se på resultatene til et studie som har sett på hvor stor effekt har et set vs tre set hos utrente deltakere. I læreboka styrketrening blir det nevnt at når en utrent person begynner å trene strukurert styrketrening så er det forventa og se økning i styrke på me 0.5-3% etter hver økt.(@raastad2010) Ifølge studien til Wernebom så kan man også forvente å se en økning på 0.1 til 0.5% i tverssnitt på muskulaturen.(@Wernebom2012)
+Så i denne artikelen her skal vi se på resultatene til et studie som har sett på hvor stor effekt har et set vs tre set hos utrente deltakere. I læreboka styrketrening blir det nevnt at når en utrent person begynner å trene strukurert styrketrening så er det forventa og se økning i styrke på me 0.5-3% etter hver økt.[@raastad2010] Ifølge studien til Wernebom så kan man også forvente å se en økning på 0.1 til 0.5% i tverssnitt på muskulaturen.[@Wernebom2012]
 
-Basert på tidligere forskning (@rønnestad2007, @Krieger2010) så er vår hypotesete at vi kommer til å se en mer signifikant økning på multiple sets enn på single set.
+Basert på tidligere forskning [@rønnestad2007: @Krieger2010] så er vår hypotesete at vi kommer til å se en mer signifikant økning på multiple sets enn på single set.
 
 ## Metode
 
@@ -134,38 +137,43 @@ m1results <- paste0(m1est,
 #| warning: false
 #| message: false
 #| echo: false
-#| fig-cap: Figur 1. Denne figuren viser endringen i mager masse fra pre til post.
+#| fig-cap: "**Figur 1.** Denne figuren viser endringen i mager masse fra pre til post."
+
 
 leanmass %>%
   filter(sets %in% c("single", "multiple") & (time %in% c("pre", "post"))) %>%
   group_by(sets, participant, time) %>%
-  
   summarize(avg_lean_mass = mean(lean.mass)) %>%
   
-  ggplot(aes(x = factor(time, levels = c("pre", "post")), y = avg_lean_mass, group = sets, color = sets)) +
- 
-   geom_line(aes(group = interaction(sets, participant), color = sets)) +
-  stat_summary(aes(group = 1), fun = mean, geom = "line", linetype = "dashed", size = 1.5) +
- 
-   geom_text(aes(x = 0.5, y = max(avg_lean_mass, na.rm = TRUE), label = "*"), 
+  ggplot(aes(x = factor(time, levels = c("pre", "post")), y = avg_lean_mass, group = interaction(sets, participant), color = interaction(sets, participant))) +
+  
+  geom_line() +
+  stat_summary(aes(group = 1), fun = mean, geom = "line", linetype = "dashed", size = 1.5, color = "black") +
+  
+  geom_text(aes(x = 0.5, y = max(avg_lean_mass, na.rm = TRUE), label = "*"), 
             color = "black", size = 6, vjust = -0.5, hjust = 0.5) +  
+  
   facet_wrap(~ sets, scales = "free") +
+  
   theme_minimal() +
- 
-   labs(
-    title = "mager masse",
+  
+  guides(color = FALSE) + 
+  
+  labs(
+    title = "Mager Masse",
     x = "Tidspunkt",
     y = "Antall gram"
-  ) +
- 
-   theme(legend.position = "simple")
+  )
+
+
+
 ```
 
 ```{r}
 #| message: false
 #| warning: false 
 #| echo: false
-#| label: T-test tabell
+#| label: T-test tabell Mager Masse
 #| fig-cap: Tabell 2. Denne tabellen viser p-veriden fra pre til post på lean mass
 
 dat <- dxadata %>%
@@ -193,13 +201,12 @@ dat <- dxadata %>%
 
 t_test_result <- t.test(dat$multiple, dat$single, paired = TRUE)
 
-result_table <- data.frame(
-  statistic = round(t_test_result$statistic, 2),
-  p_value = sprintf("%.3f", t_test_result$p.value),
-  df = t_test_result$parameter
-)
+# Opprett en dataframe for å lagre t-testresultatene
+t_test <- t_test_result
+t_test <- round(t_test$p.value, 3) 
 
-print(result_table)
+print(t_test)
+
 
 ```
 
@@ -238,15 +245,15 @@ str <- strengthvolume %>%
   filter(exercise == "legext", include == "incl") %>%
   mutate(time = factor(time, levels = c("pre", "session1", "week2", "week5", "week9", "post"))) 
 
-# Filter out participants with missing data
-str <- str %>%
-  filter(!is.na(load))  # assuming "load" is the variable you are concerned about
 
-# Create a separate data frame for multiple sets
+str <- str %>%
+  filter(!is.na(load)) 
+
+
 str_multiple <- str %>%
   filter(sets != "single")
 
-# Plot for multiple sets with average line
+
 ggplot(str_multiple, aes(time, load, group = paste(participant, sets), color = participant, fill = sets)) + 
   geom_line() + 
   stat_summary(fun = mean, geom = "line", aes(group = 1), color = "black", linetype = "dashed", size = 1) +
@@ -282,7 +289,7 @@ ggplot(str_single, aes(time, load, group = participant, color = participant)) +
 #| message: false
 #| warning: false 
 #| echo: false
-#| label: T-test tabell
+#| label: T-test tabell Legext
 #| fig-cap: Tabell 3. Denne tabellen viser p-veriden fra pre til post styrkeøkningen på begge beina.
 
 strtr <- str %>%
@@ -297,7 +304,7 @@ t_test_legext <- t.test(strtr$multiple, strtr$single, paired = TRUE)
 
 result_table_legext <- data.frame(
   statistic = round(t_test_legext$statistic, 2),
-  p_value = sprintf("%.3f", t_test_legext$p.value),
+  p_value = round(t_test_legext$p.value),
   df = t_test_legext$parameter
 )
 
@@ -340,7 +347,7 @@ print(percent_difference)
 
 ## Diskusjon
 
-I denne studien skulle vi se på hva som er mer guntstig og trene for utrente personer av et og tre set. Resultatene viser en signifikant økning i styrke og viste at beinet som trente flere set hadde en større økning enn beinet som trente et set. Dette stemmer med hva (@Schoenfeld2017) skrev i sin artikkel. Det ble også funnet en økning i mager masse i begge bein men det kan tenkes at dette kan være en effekt av at studiet har relativt få deltakere samtidig som at ikke alle deltakerne startet helt utrente heller og da kan det hende at deltakerne responderte dårligere på styrketreningen siden de hadde trengt et større treningsstimuli som ble snakket om i studien til (@Vikmoen2020).
+I denne studien skulle vi se på hva som er mer guntstig og trene for utrente personer av et og tre set. Resultatene viser en signifikant økning i styrke og viste at beinet som trente flere set hadde en større økning enn beinet som trente et set. Dette stemmer med hva [@Schoenfeld2017] skrev i sin artikkel. Det ble også funnet en økning i mager masse i begge bein men det kan tenkes at dette kan være en effekt av at studiet har relativt få deltakere samtidig som at ikke alle deltakerne startet helt utrente heller og da kan det hende at deltakerne responderte dårligere på styrketreningen siden de hadde trengt et større treningsstimuli som ble snakket om i studien til [@Vikmoen2020].
 
 ## Konklusjon
 
